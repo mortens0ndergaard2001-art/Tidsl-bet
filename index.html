@@ -7,6 +7,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
@@ -17,19 +18,16 @@
     <meta name="viewport" content="width=device-width,
         initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.css"/>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.css"/>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.css"/>
+
     <style>
-        #map_7b78e732d0bc3efcd9d57fcf33eec995 {
-            position: relative;
-            width: 100.0%;
-            height: 100.0%;
-            left: 0.0%;
-            top: 0.0%;
-        }
-
-        .leaflet-container {
-            font-size: 1rem;
-        }
-
         html, body {
             width: 100%;
             height: 100%;
@@ -37,12 +35,16 @@
             padding: 0;
         }
 
-        #map {
-            position:absolute;
-            top:0;
-            bottom:0;
-            right:0;
-            left:0;
+        #map_7b78e732d0bc3efcd9d57fcf33eec995 {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+        }
+
+        .leaflet-container {
+            font-size: 1rem;
         }
     </style>
 
@@ -51,12 +53,6 @@
         L_DISABLE_3D = false;
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.css"/>
 </head>
 
 <body>
@@ -222,7 +218,6 @@
     max-width:240px;
   }
 
-  /* TWO TIMER BOXES */
   #timer-wrapper{
     position:fixed;
     top:12px;
@@ -279,6 +274,11 @@
 
   .timer-buttons button.minus{
     background:var(--err);
+  }
+
+  .timer-buttons button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
   }
 
   .timer-box.flash{
@@ -361,10 +361,11 @@
   </div>
 </div>
 
-<!-- TWO TIMERS -->
+<!-- Two timers -->
 <div id="timer-wrapper" aria-live="polite">
+
   <div class="timer-box" id="adjustableTimerBox">
-    <div class="timer-label">Justerbar tid</div>
+    <div class="timer-label">Pointtid</div>
     <div class="timer-time" id="adjustableTimer">60:00</div>
 
     <div class="timer-buttons">
@@ -377,6 +378,7 @@
     <div class="timer-label">Fast tid</div>
     <div class="timer-time" id="fixedTimer">60:00</div>
   </div>
+
 </div>
 
 <script>
@@ -401,13 +403,13 @@
   const USE_MAX_BOUNDS = false;
   const MAX_BOUNDS = [[55.7115, 9.9855], [55.7165, 9.9945]];
 
-  // TIMER CONFIGURATION
   const START_DURATION_MS = 60 * 60 * 1000;
   const ADJUSTMENT_MS = 30 * 1000;
 
   let adjustableEndAt = null;
   let fixedEndAt = null;
   let timerTick = null;
+  let gameIsFinished = false;
 
   let nextIndex = 0;
   let gameLayer;
@@ -425,13 +427,20 @@
   }
 
   function renderTimers(){
-    if (!adjustableEndAt || !fixedEndAt) return;
+    if (!adjustableEndAt || !fixedEndAt || gameIsFinished) return;
 
-    const adjustableLeft = Math.max(0, adjustableEndAt - Date.now());
-    const fixedLeft = Math.max(0, fixedEndAt - Date.now());
+    const now = Date.now();
+
+    const adjustableLeft = Math.max(0, adjustableEndAt - now);
+    const fixedLeft = Math.max(0, fixedEndAt - now);
 
     const adjustableEl = document.getElementById("adjustableTimer");
     const fixedEl = document.getElementById("fixedTimer");
+
+    if (fixedLeft === 0){
+      finishGameByFixedTimer(adjustableLeft);
+      return;
+    }
 
     if (adjustableEl){
       adjustableEl.textContent = mmss(adjustableLeft);
@@ -442,19 +451,12 @@
       fixedEl.textContent = mmss(fixedLeft);
       fixedEl.style.color = fixedLeft <= 60000 ? "var(--err)" : "var(--ink)";
     }
-
-    if (adjustableLeft === 0){
-      timeUp();
-    }
-
-    if (adjustableLeft === 0 && fixedLeft === 0){
-      clearInterval(timerTick);
-      timerTick = null;
-    }
   }
 
   function startTimers(){
     const wrapper = document.getElementById("timer-wrapper");
+
+    gameIsFinished = false;
 
     adjustableEndAt = Date.now() + START_DURATION_MS;
     fixedEndAt = Date.now() + START_DURATION_MS;
@@ -472,7 +474,7 @@
   }
 
   function adjustAdjustableTimer(deltaMs){
-    if (!adjustableEndAt) return;
+    if (!adjustableEndAt || gameIsFinished) return;
 
     adjustableEndAt = Math.max(Date.now(), adjustableEndAt + deltaMs);
 
@@ -486,14 +488,40 @@
     }
   }
 
-  function timeUp(){
-    setFeedback("Tiden er udløbet ⏳", false);
+  function finishGameByFixedTimer(scoreMs){
+    gameIsFinished = true;
+
+    if (timerTick){
+      clearInterval(timerTick);
+      timerTick = null;
+    }
+
+    const scoreText = mmss(scoreMs);
+
+    const adjustableEl = document.getElementById("adjustableTimer");
+    const fixedEl = document.getElementById("fixedTimer");
+
+    if (adjustableEl){
+      adjustableEl.textContent = scoreText;
+      adjustableEl.style.color = "var(--ok)";
+    }
+
+    if (fixedEl){
+      fixedEl.textContent = "00:00";
+      fixedEl.style.color = "var(--err)";
+    }
+
+    setFeedback(`Tiden er slut. Jeres score er ${scoreText} ⏱️`, true);
 
     const f = document.getElementById("kode");
     const b = document.getElementById("checkBtn");
+    const plus = document.getElementById("plus30Btn");
+    const minus = document.getElementById("minus30Btn");
 
     if (f) f.disabled = true;
     if (b) b.disabled = true;
+    if (plus) plus.disabled = true;
+    if (minus) minus.disabled = true;
   }
 
   function makeDivIcon(){
@@ -564,6 +592,8 @@
   let lastCheck = 0;
 
   async function checkKode(){
+    if (gameIsFinished) return;
+
     const now = Date.now();
 
     if (now - lastCheck < 250) return;
@@ -643,6 +673,17 @@
         document.getElementById("start-gate").style.display = "none";
 
         nextIndex = 0;
+        gameIsFinished = false;
+
+        const kodeInput = document.getElementById("kode");
+        const checkButton = document.getElementById("checkBtn");
+        const plus = document.getElementById("plus30Btn");
+        const minus = document.getElementById("minus30Btn");
+
+        if (kodeInput) kodeInput.disabled = false;
+        if (checkButton) checkButton.disabled = false;
+        if (plus) plus.disabled = false;
+        if (minus) minus.disabled = false;
 
         if (gameLayer){
           gameLayer.clearLayers();
@@ -787,4 +828,5 @@
         {"flyTo": true}
     ).addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
 </script>
+
 </html>
