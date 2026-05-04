@@ -3,6 +3,7 @@
 <head>
 
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -79,9 +80,12 @@
 
   #code-panel{
     position:fixed;
-    inset:12px 12px auto 12px;
+    top:14px;
     left:50%;
     transform:translateX(-50%);
+    width:560px;
+    max-width:calc(100vw - 760px);
+    min-width:520px;
     background:var(--bg);
     color:var(--ink);
     padding:12px 14px;
@@ -113,9 +117,15 @@
     color:white;
   }
 
+  #checkBtn:disabled,
+  #kode:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+  }
+
   #feedback{
     font-weight:600;
-    min-width:200px;
+    min-width:160px;
   }
 
   .progress{
@@ -220,7 +230,7 @@
 
   #timer-wrapper{
     position:fixed;
-    top:12px;
+    top:14px;
     right:12px;
     z-index:10001;
     display:none;
@@ -295,7 +305,246 @@
     }
   }
 
+  #dramatic-overlay{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:9997;
+    background:rgba(198,40,40,0);
+    transition:background .8s ease;
+  }
+
+  body.final-phase #dramatic-overlay{
+    background:rgba(198,40,40,.28);
+  }
+
+  #phase-banner{
+    position:fixed;
+    top:120px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:10002;
+    display:none;
+    width:min(760px,92vw);
+    background:rgba(10,10,10,.88);
+    color:white;
+    border:2px solid rgba(255,255,255,.35);
+    border-radius:18px;
+    box-shadow:0 12px 40px rgba(0,0,0,.35);
+    padding:18px 22px;
+    text-align:center;
+  }
+
+  #phase-banner h1{
+    margin:0 0 8px;
+    font-size:34px;
+    font-weight:1000;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+
+  #phase-banner p{
+    margin:4px 0;
+    font-size:17px;
+    font-weight:700;
+  }
+
+  body.final-phase:not(.phase-banner-closed) #phase-banner{
+    display:block;
+    animation:bannerPulse 1.2s ease-in-out infinite alternate;
+  }
+
+  #closePhaseBannerBtn{
+    position:absolute;
+    top:10px;
+    right:12px;
+    width:34px;
+    height:34px;
+    border:0;
+    border-radius:999px;
+    background:rgba(255,255,255,.16);
+    color:white;
+    font-size:26px;
+    line-height:1;
+    font-weight:900;
+    cursor:pointer;
+  }
+
+  #closePhaseBannerBtn:hover{
+    background:rgba(255,255,255,.28);
+  }
+
+  @keyframes bannerPulse{
+    from{
+      transform:translateX(-50%) scale(1);
+    }
+
+    to{
+      transform:translateX(-50%) scale(1.025);
+    }
+  }
+
+  #mission-board-shell{
+    position:fixed;
+    left:12px;
+    bottom:12px;
+    z-index:10001;
+    width:min(360px,92vw);
+    display:none;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  #missionToggleBtn{
+    width:100%;
+    border:0;
+    border-radius:14px;
+    padding:10px 14px;
+    background:rgba(10,10,10,.92);
+    color:white;
+    font-weight:1000;
+    box-shadow:0 8px 28px rgba(0,0,0,.22);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+  }
+
+  #missionCount{
+    display:inline-grid;
+    place-items:center;
+    min-width:28px;
+    height:28px;
+    border-radius:999px;
+    background:var(--brand);
+    color:white;
+    font-weight:1000;
+  }
+
+  #mission-board{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    max-height:55vh;
+    overflow:auto;
+  }
+
+  #mission-board-shell.collapsed #mission-board{
+    display:none;
+  }
+
+  .mission-card{
+    background:rgba(255,255,255,.92);
+    color:#111;
+    border-radius:16px;
+    padding:14px 16px;
+    box-shadow:0 8px 28px rgba(0,0,0,.22);
+    border-left:10px solid #c62828;
+    backdrop-filter:blur(8px);
+    animation:missionPop .35s ease;
+  }
+
+  @media (prefers-color-scheme: dark){
+    .mission-card{
+      background:rgba(15,20,28,.92);
+      color:#f5f5f5;
+    }
+  }
+
+  .mission-card h3{
+    margin:0 0 8px;
+    font-size:18px;
+    font-weight:1000;
+  }
+
+  .mission-card p{
+    margin:4px 0;
+    font-size:15px;
+    font-weight:700;
+  }
+
+  .mission-card.red{
+    border-left-color:#c62828;
+  }
+
+  .mission-card.blue{
+    border-left-color:#1f7ae0;
+  }
+
+  .mission-card.green{
+    border-left-color:#14a44d;
+  }
+
+  .mission-card.black{
+    border-left-color:#111;
+  }
+
+  @keyframes missionPop{
+    from{
+      transform:translateY(12px) scale(.96);
+      opacity:0;
+    }
+
+    to{
+      transform:translateY(0) scale(1);
+      opacity:1;
+    }
+  }
+
+  #random-mission-popup{
+    position:fixed;
+    inset:0;
+    z-index:10003;
+    display:none;
+    place-items:center;
+    background:rgba(0,0,0,.55);
+  }
+
+  .random-mission-card{
+    width:min(560px,92vw);
+    background:var(--bg);
+    color:var(--ink);
+    border-radius:22px;
+    padding:26px;
+    box-shadow:0 18px 60px rgba(0,0,0,.45);
+    border:3px solid #c62828;
+    text-align:center;
+    animation:missionPop .35s ease;
+  }
+
+  .random-mission-card h2{
+    margin:0 0 12px;
+    font-size:30px;
+    font-weight:1000;
+    color:#c62828;
+    text-transform:uppercase;
+  }
+
+  .random-mission-card p{
+    font-size:18px;
+    font-weight:700;
+    margin:8px 0;
+  }
+
+  .random-mission-card button{
+    margin-top:18px;
+    border:0;
+    border-radius:12px;
+    padding:12px 18px;
+    background:var(--brand);
+    color:white;
+    font-weight:900;
+    cursor:pointer;
+  }
+
   @media (max-width:700px){
+    #code-panel{
+      top:12px;
+      width:calc(100vw - 24px);
+      max-width:none;
+      min-width:0;
+    }
+
     #timer-wrapper{
       top:auto;
       bottom:12px;
@@ -313,10 +562,31 @@
     .timer-time{
       font-size:22px;
     }
+
+    #phase-banner{
+      top:80px;
+      padding:14px 16px;
+    }
+
+    #phase-banner h1{
+      font-size:24px;
+    }
+
+    #phase-banner p{
+      font-size:14px;
+    }
+
+    #mission-board-shell{
+      bottom:120px;
+      width:calc(100vw - 24px);
+    }
+
+    #mission-board{
+      max-height:38vh;
+    }
   }
 </style>
 
-<!-- Start-gate -->
 <div id="start-gate" aria-modal="true" role="dialog">
   <div class="gate-card">
     <h2>Start adgang</h2>
@@ -337,7 +607,6 @@
   </div>
 </div>
 
-<!-- Top-panel -->
 <div id="code-panel" role="region" aria-label="Kodepanel">
   <label for="kode">Indtast kode:</label>
 
@@ -361,11 +630,10 @@
   </div>
 </div>
 
-<!-- Two timers -->
 <div id="timer-wrapper" aria-live="polite">
 
   <div class="timer-box" id="adjustableTimerBox">
-    <div class="timer-label">Pointtid</div>
+    <div class="timer-label">Pointscore</div>
     <div class="timer-time" id="adjustableTimer">60:00</div>
 
     <div class="timer-buttons">
@@ -381,20 +649,155 @@
 
 </div>
 
+<div id="dramatic-overlay"></div>
+
+<div id="phase-banner">
+  <button id="closePhaseBannerBtn" type="button" aria-label="Luk slutfase-besked">×</button>
+
+  <h1>Slutfase aktiveret</h1>
+  <p>Alle bonusser tæller dobbelt.</p>
+  <p>Forkerte svar giver dobbelt straf.</p>
+  <p>Sidste mission er låst op.</p>
+</div>
+
+<div id="mission-board-shell">
+  <button id="missionToggleBtn" type="button">
+    <span id="missionToggleText">Skjul missioner</span>
+    <span id="missionCount">0</span>
+  </button>
+
+  <div id="mission-board"></div>
+</div>
+
+<div id="random-mission-popup">
+  <div class="random-mission-card">
+    <h2>Akut mission!</h2>
+    <p id="randomMissionTitle">Mission låst op</p>
+    <p id="randomMissionPeople">Kræver 4 personer.</p>
+    <p id="randomMissionStart">Start nu.</p>
+    <p id="randomMissionReward">Belønning: +7 minutter.</p>
+    <button id="closeRandomMissionBtn" type="button">Forstået</button>
+  </div>
+</div>
+
 <script>
   "use strict";
 
   const MAP_ID = "map_7b78e732d0bc3efcd9d57fcf33eec995";
 
   const POSTS = [
-    {"code": "1234", "name": "Post 1", "lat": 55.715006, "lon": 9.989017, "popup": "Post 1: Atletikbanen<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "2345", "name": "Post 2", "lat": 55.714184, "lon": 9.987867, "popup": "Post 2: Bålpladsen<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "3456", "name": "Post 3", "lat": 55.714649, "lon": 9.992448, "popup": "Post 3: Søen<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "4567", "name": "Post 4", "lat": 55.713184, "lon": 9.989702, "popup": "Post 4: Rododendron<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "5678", "name": "Post 5", "lat": 55.713582, "lon": 9.99129, "popup": "Post 5: Beachvolleybanerne<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "6789", "name": "Post 6", "lat": 55.7137, "lon": 9.989384, "popup": "Post 6: Støvlevasken<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "7891", "name": "Post 7", "lat": 55.713724, "lon": 9.987689, "popup": "Post 7: Crossfit<br><i>Indtast næste kode for at fortsætte…</i>"},
-    {"code": "8912", "name": "Post 8", "lat": 55.712535, "lon": 9.987702, "popup": "Post 8: Hellebjerg skiltet<br><i>Indtast næste kode for at fortsætte…</i>"}
+    {
+      code: "1234",
+      name: "Post 1",
+      lat: 55.715006,
+      lon: 9.989017,
+      popup: "Post 1: Atletikbanen<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "red",
+        title: "Rød mission låst op",
+        people: 4,
+        startOffsetMin: 8,
+        rewardMin: 7
+      }
+    },
+    {
+      code: "2345",
+      name: "Post 2",
+      lat: 55.714184,
+      lon: 9.987867,
+      popup: "Post 2: Bålpladsen<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "blue",
+        title: "Blå mission låst op",
+        people: 3,
+        startOffsetMin: 10,
+        rewardMin: 5
+      }
+    },
+    {
+      code: "3456",
+      name: "Post 3",
+      lat: 55.714649,
+      lon: 9.992448,
+      popup: "Post 3: Søen<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "green",
+        title: "Grøn mission låst op",
+        people: 2,
+        startOffsetMin: 7,
+        rewardMin: 4
+      }
+    },
+    {
+      code: "4567",
+      name: "Post 4",
+      lat: 55.713184,
+      lon: 9.989702,
+      popup: "Post 4: Rododendron<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "red",
+        title: "Rød mission låst op",
+        people: 4,
+        startOffsetMin: 12,
+        rewardMin: 7
+      }
+    },
+    {
+      code: "5678",
+      name: "Post 5",
+      lat: 55.713582,
+      lon: 9.99129,
+      popup: "Post 5: Beachvolleybanerne<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "black",
+        title: "Sort risikomission låst op",
+        people: 5,
+        startOffsetMin: 9,
+        rewardMin: 10
+      }
+    },
+    {
+      code: "6789",
+      name: "Post 6",
+      lat: 55.7137,
+      lon: 9.989384,
+      popup: "Post 6: Støvlevasken<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "blue",
+        title: "Blå mission låst op",
+        people: 3,
+        startOffsetMin: 8,
+        rewardMin: 6
+      }
+    },
+    {
+      code: "7891",
+      name: "Post 7",
+      lat: 55.713724,
+      lon: 9.987689,
+      popup: "Post 7: Crossfit<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "red",
+        title: "Rød mission låst op",
+        people: 4,
+        startOffsetMin: 6,
+        rewardMin: 8
+      }
+    },
+    {
+      code: "8912",
+      name: "Post 8",
+      lat: 55.712535,
+      lon: 9.987702,
+      popup: "Post 8: Hellebjerg skiltet<br><i>Indtast næste kode for at fortsætte…</i>",
+      mission: {
+        color: "black",
+        title: "Sidste mission låst op",
+        people: 6,
+        startOffsetMin: 5,
+        rewardMin: 12
+      }
+    }
   ];
 
   const START_CODE = "Start";
@@ -404,12 +807,19 @@
   const MAX_BOUNDS = [[55.7115, 9.9855], [55.7165, 9.9945]];
 
   const START_DURATION_MS = 60 * 60 * 1000;
+  const FINAL_PHASE_MS = 10 * 60 * 1000;
+
   const ADJUSTMENT_MS = 30 * 1000;
+  const WRONG_ANSWER_PENALTY_MS = 30 * 1000;
 
   let adjustableEndAt = null;
   let fixedEndAt = null;
   let timerTick = null;
+  let randomMissionTimeout = null;
+
   let gameIsFinished = false;
+  let finalPhaseActive = false;
+  let randomMissionHasAppeared = false;
 
   let nextIndex = 0;
   let gameLayer;
@@ -426,6 +836,27 @@
     return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
+  function getClockTimeFromNow(minutesFromNow){
+    const d = new Date(Date.now() + minutesFromNow * 60 * 1000);
+
+    return d.toLocaleTimeString("da-DK", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function currentAdjustmentMs(){
+    return finalPhaseActive ? ADJUSTMENT_MS * 2 : ADJUSTMENT_MS;
+  }
+
+  function currentWrongPenaltyMs(){
+    return finalPhaseActive ? WRONG_ANSWER_PENALTY_MS * 2 : WRONG_ANSWER_PENALTY_MS;
+  }
+
+  function formatReward(rewardMin){
+    return finalPhaseActive ? rewardMin * 2 : rewardMin;
+  }
+
   function renderTimers(){
     if (!adjustableEndAt || !fixedEndAt || gameIsFinished) return;
 
@@ -436,6 +867,10 @@
 
     const adjustableEl = document.getElementById("adjustableTimer");
     const fixedEl = document.getElementById("fixedTimer");
+
+    if (!finalPhaseActive && fixedLeft <= FINAL_PHASE_MS && fixedLeft > 0){
+      activateFinalPhase();
+    }
 
     if (fixedLeft === 0){
       finishGameByFixedTimer(adjustableLeft);
@@ -457,6 +892,11 @@
     const wrapper = document.getElementById("timer-wrapper");
 
     gameIsFinished = false;
+    finalPhaseActive = false;
+    randomMissionHasAppeared = false;
+
+    document.body.classList.remove("final-phase");
+    document.body.classList.remove("phase-banner-closed");
 
     adjustableEndAt = Date.now() + START_DURATION_MS;
     fixedEndAt = Date.now() + START_DURATION_MS;
@@ -469,8 +909,155 @@
       clearInterval(timerTick);
     }
 
+    if (randomMissionTimeout){
+      clearTimeout(randomMissionTimeout);
+    }
+
+    scheduleRandomMissionAroundMiddle();
+
+    updateTimerButtonLabels();
     renderTimers();
+
     timerTick = setInterval(renderTimers, 250);
+  }
+
+  function scheduleRandomMissionAroundMiddle(){
+    const minDelay = 25 * 60 * 1000;
+    const maxDelay = 35 * 60 * 1000;
+    const randomDelay = Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
+
+    randomMissionTimeout = setTimeout(() => {
+      if (!gameIsFinished && !randomMissionHasAppeared){
+        showRandomMission();
+      }
+    }, randomDelay);
+  }
+
+  function showRandomMission(){
+    randomMissionHasAppeared = true;
+
+    const popup = document.getElementById("random-mission-popup");
+
+    const mission = {
+      color: "red",
+      title: "Rød mission låst op",
+      people: 4,
+      startOffsetMin: 3,
+      rewardMin: 7
+    };
+
+    const title = document.getElementById("randomMissionTitle");
+    const people = document.getElementById("randomMissionPeople");
+    const start = document.getElementById("randomMissionStart");
+    const reward = document.getElementById("randomMissionReward");
+
+    if (title) title.textContent = mission.title;
+    if (people) people.textContent = `Kræver ${mission.people} personer.`;
+    if (start) start.textContent = `Start kl. ${getClockTimeFromNow(mission.startOffsetMin)}.`;
+    if (reward) reward.textContent = `Belønning: +${formatReward(mission.rewardMin)} minutter.`;
+
+    if (popup){
+      popup.style.display = "grid";
+    }
+
+    addMissionCard(mission);
+    setFeedback("Akut mission låst op! Kig på missionstavlen.", true);
+  }
+
+  function closeRandomMissionPopup(){
+    const popup = document.getElementById("random-mission-popup");
+
+    if (popup){
+      popup.style.display = "none";
+    }
+  }
+
+  function activateFinalPhase(){
+    finalPhaseActive = true;
+
+    document.body.classList.add("final-phase");
+    document.body.classList.remove("phase-banner-closed");
+
+    updateTimerButtonLabels();
+
+    const finalMission = {
+      color: "black",
+      title: "Sidste mission er låst op",
+      people: 6,
+      startOffsetMin: 2,
+      rewardMin: 12
+    };
+
+    addMissionCard(finalMission);
+
+    setFeedback("SLUTFASE AKTIVERET! Bonusser tæller dobbelt. Forkerte svar giver dobbelt straf.", true);
+  }
+
+  function closePhaseBanner(){
+    document.body.classList.add("phase-banner-closed");
+  }
+
+  function updateTimerButtonLabels(){
+    const plus = document.getElementById("plus30Btn");
+    const minus = document.getElementById("minus30Btn");
+
+    if (plus){
+      plus.textContent = finalPhaseActive ? "+60 sek" : "+30 sek";
+    }
+
+    if (minus){
+      minus.textContent = finalPhaseActive ? "-60 sek" : "-30 sek";
+    }
+  }
+
+  function addMissionCard(mission){
+    const shell = document.getElementById("mission-board-shell");
+    const board = document.getElementById("mission-board");
+
+    if (!shell || !board) return;
+
+    shell.style.display = "flex";
+
+    const card = document.createElement("div");
+    card.className = `mission-card ${mission.color || "red"}`;
+
+    const reward = formatReward(mission.rewardMin);
+    const startTime = getClockTimeFromNow(mission.startOffsetMin);
+
+    card.innerHTML = `
+      <h3>${mission.title}</h3>
+      <p>Kræver ${mission.people} personer.</p>
+      <p>Start kl. ${startTime}.</p>
+      <p>Belønning: +${reward} minutter${finalPhaseActive ? " — slutfase x2" : ""}.</p>
+    `;
+
+    board.prepend(card);
+
+    updateMissionCount();
+  }
+
+  function updateMissionCount(){
+    const board = document.getElementById("mission-board");
+    const count = document.getElementById("missionCount");
+
+    if (!board || !count) return;
+
+    count.textContent = board.children.length;
+  }
+
+  function toggleMissionBoard(){
+    const shell = document.getElementById("mission-board-shell");
+    const text = document.getElementById("missionToggleText");
+
+    if (!shell || !text) return;
+
+    shell.classList.toggle("collapsed");
+
+    if (shell.classList.contains("collapsed")){
+      text.textContent = "Vis missioner";
+    } else {
+      text.textContent = "Skjul missioner";
+    }
   }
 
   function adjustAdjustableTimer(deltaMs){
@@ -488,12 +1075,29 @@
     }
   }
 
+  function applyWrongAnswerPenalty(){
+    const penalty = currentWrongPenaltyMs();
+
+    adjustAdjustableTimer(-penalty);
+
+    if (finalPhaseActive){
+      setFeedback("Forkert kode – dobbelt straf i slutfasen: -60 sek.", false);
+    } else {
+      setFeedback("Forkert kode – prøv igen. Straf: -30 sek.", false);
+    }
+  }
+
   function finishGameByFixedTimer(scoreMs){
     gameIsFinished = true;
 
     if (timerTick){
       clearInterval(timerTick);
       timerTick = null;
+    }
+
+    if (randomMissionTimeout){
+      clearTimeout(randomMissionTimeout);
+      randomMissionTimeout = null;
     }
 
     const scoreText = mmss(scoreMs);
@@ -510,6 +1114,8 @@
       fixedEl.textContent = "00:00";
       fixedEl.style.color = "var(--err)";
     }
+
+    document.body.classList.remove("final-phase");
 
     setFeedback(`Tiden er slut. Jeres score er ${scoreText} ⏱️`, true);
 
@@ -610,15 +1216,21 @@
     const expected = POSTS[nextIndex];
 
     if (!expected || kode !== expected.code){
-      setFeedback("Forkert kode – prøv igen.");
       field.setAttribute("aria-invalid", "true");
       field.select();
+
+      applyWrongAnswerPenalty();
+
       return;
     }
 
     field.removeAttribute("aria-invalid");
 
     showPost(expected);
+
+    if (expected.mission){
+      addMissionCard(expected.mission);
+    }
 
     nextIndex = Math.min(nextIndex + 1, POSTS.length);
 
@@ -674,6 +1286,30 @@
 
         nextIndex = 0;
         gameIsFinished = false;
+        finalPhaseActive = false;
+        randomMissionHasAppeared = false;
+
+        document.body.classList.remove("final-phase");
+        document.body.classList.remove("phase-banner-closed");
+
+        const missionShell = document.getElementById("mission-board-shell");
+        const missionBoard = document.getElementById("mission-board");
+        const missionToggleText = document.getElementById("missionToggleText");
+
+        if (missionBoard){
+          missionBoard.innerHTML = "";
+        }
+
+        if (missionShell){
+          missionShell.style.display = "none";
+          missionShell.classList.remove("collapsed");
+        }
+
+        if (missionToggleText){
+          missionToggleText.textContent = "Skjul missioner";
+        }
+
+        updateMissionCount();
 
         const kodeInput = document.getElementById("kode");
         const checkButton = document.getElementById("checkBtn");
@@ -717,6 +1353,9 @@
 
     const plus30Btn = document.getElementById("plus30Btn");
     const minus30Btn = document.getElementById("minus30Btn");
+    const closeRandomMissionBtn = document.getElementById("closeRandomMissionBtn");
+    const closePhaseBannerBtn = document.getElementById("closePhaseBannerBtn");
+    const missionToggleBtn = document.getElementById("missionToggleBtn");
 
     if (checkBtn){
       checkBtn.addEventListener("click", checkKode);
@@ -732,11 +1371,23 @@
     }
 
     if (plus30Btn){
-      plus30Btn.addEventListener("click", () => adjustAdjustableTimer(ADJUSTMENT_MS));
+      plus30Btn.addEventListener("click", () => adjustAdjustableTimer(currentAdjustmentMs()));
     }
 
     if (minus30Btn){
-      minus30Btn.addEventListener("click", () => adjustAdjustableTimer(-ADJUSTMENT_MS));
+      minus30Btn.addEventListener("click", () => adjustAdjustableTimer(-currentAdjustmentMs()));
+    }
+
+    if (closeRandomMissionBtn){
+      closeRandomMissionBtn.addEventListener("click", closeRandomMissionPopup);
+    }
+
+    if (closePhaseBannerBtn){
+      closePhaseBannerBtn.addEventListener("click", closePhaseBanner);
+    }
+
+    if (missionToggleBtn){
+      missionToggleBtn.addEventListener("click", toggleMissionBoard);
     }
 
     initGate();
