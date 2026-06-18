@@ -491,6 +491,90 @@
     }
   }
 
+
+
+  #activity-status-shell{
+    position:fixed;
+    right:12px;
+    top:130px;
+    z-index:10001;
+    width:min(300px,92vw);
+    display:none;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  #activityStatusToggleBtn{
+    width:100%;
+    border:0;
+    border-radius:14px;
+    padding:10px 14px;
+    background:rgba(10,10,10,.92);
+    color:white;
+    font-weight:1000;
+    box-shadow:0 8px 28px rgba(0,0,0,.22);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+  }
+
+  #activityStatusBadge{
+    display:inline-grid;
+    place-items:center;
+    min-width:28px;
+    height:28px;
+    border-radius:999px;
+    background:var(--brand);
+    color:white;
+    font-weight:1000;
+  }
+
+  #activity-status-card{
+    background:var(--bg);
+    color:var(--ink);
+    border-radius:16px;
+    padding:14px 16px;
+    box-shadow:0 8px 28px rgba(0,0,0,.22);
+    border-left:10px solid var(--brand);
+    backdrop-filter:blur(8px);
+    animation:missionPop .35s ease;
+  }
+
+  #activity-status-card.status-flash{
+    animation:statusFlash .7s ease;
+  }
+
+  #activity-status-card h3{
+    margin:0 0 8px;
+    font-size:18px;
+    font-weight:1000;
+  }
+
+  #activity-status-card p{
+    margin:6px 0;
+    font-size:16px;
+    font-weight:900;
+  }
+
+  #activity-status-card .open{
+    color:var(--ok);
+  }
+
+  #activity-status-card .closed{
+    color:var(--err);
+  }
+
+  #activity-status-shell.collapsed #activity-status-card{
+    display:none;
+  }
+
+  @keyframes statusFlash{
+    0%{ transform:scale(1); }
+    35%{ transform:scale(1.06); }
+    100%{ transform:scale(1); }
+  }
+
   @media (max-width:700px){
     #code-panel{
       top:12px;
@@ -538,6 +622,15 @@
     #mission-board{
       max-height:38vh;
     }
+
+    #activity-status-shell{
+      top:auto;
+      right:12px;
+      left:12px;
+      bottom:86px;
+      width:calc(100vw - 24px);
+    }
+
   }
 </style>
 
@@ -612,6 +705,21 @@
   <p>Alle bonusser tæller dobbelt.</p>
   <p>Forkerte svar giver dobbelt straf.</p>
   <p>Missionerne giver dobbelt tid i slutfasen.</p>
+</div>
+
+
+
+<div id="activity-status-shell">
+  <button id="activityStatusToggleBtn" type="button">
+    <span id="activityStatusToggleText">Skjul status</span>
+    <span id="activityStatusBadge">!</span>
+  </button>
+
+  <div id="activity-status-card">
+    <h3>Status</h3>
+    <p id="tidsbodStatus">Tidsbod: Åben</p>
+    <p id="duelStatus">Dueller: Lukket</p>
+  </div>
 </div>
 
 <div id="mission-board-shell">
@@ -789,11 +897,23 @@
   const ADJUSTMENT_MS = 30 * 1000;
   const WRONG_ANSWER_PENALTY_MS = 30 * 1000;
 
+
+  // HER RETTER DU STATUSVINDUET
+  // fromMin/toMin = minutter inde i løbet, regnet fra start ved 60:00 på den faste timer.
+  const ACTIVITY_STATUS_PLAN = [
+    { fromMin: 0,  toMin: 10, tidsbodOpen: true,  duelsOpen: false },
+    { fromMin: 10, toMin: 25, tidsbodOpen: false, duelsOpen: true  },
+    { fromMin: 25, toMin: 35, tidsbodOpen: false, duelsOpen: false },
+    { fromMin: 35, toMin: 45, tidsbodOpen: true,  duelsOpen: false },
+    { fromMin: 45, toMin: 60, tidsbodOpen: false, duelsOpen: true  }
+  ];
+
   let adjustableEndAt = null;
   let fixedEndAt = null;
   let timerTick = null;
   let gameIsFinished = false;
   let finalPhaseActive = false;
+  let currentActivityStatusIndex = null;
   let nextIndex = 0;
   let gameLayer;
 
@@ -834,6 +954,81 @@
     return mission.solveAt || "--:--";
   }
 
+
+  function statusText(isOpen){
+    return isOpen ? "Åben" : "Lukket";
+  }
+
+  function statusClass(isOpen){
+    return isOpen ? "open" : "closed";
+  }
+
+  function getActivityStatusIndex(fixedLeft){
+    const elapsedMin = Math.floor((START_DURATION_MS - fixedLeft) / 60000);
+
+    for (let i = 0; i < ACTIVITY_STATUS_PLAN.length; i++){
+      const phase = ACTIVITY_STATUS_PLAN[i];
+
+      if (elapsedMin >= phase.fromMin && elapsedMin < phase.toMin){
+        return i;
+      }
+    }
+
+    return ACTIVITY_STATUS_PLAN.length - 1;
+  }
+
+  function openActivityStatus(){
+    const shell = document.getElementById("activity-status-shell");
+    const text = document.getElementById("activityStatusToggleText");
+
+    if (!shell || !text) return;
+
+    shell.style.display = "flex";
+    shell.classList.remove("collapsed");
+    text.textContent = "Skjul status";
+  }
+
+  function toggleActivityStatus(){
+    const shell = document.getElementById("activity-status-shell");
+    const text = document.getElementById("activityStatusToggleText");
+
+    if (!shell || !text) return;
+
+    shell.classList.toggle("collapsed");
+    shell.style.display = "flex";
+
+    if (shell.classList.contains("collapsed")){
+      text.textContent = "Vis status";
+    } else {
+      text.textContent = "Skjul status";
+    }
+  }
+
+  function updateActivityStatus(fixedLeft){
+    const idx = getActivityStatusIndex(fixedLeft);
+    const phase = ACTIVITY_STATUS_PLAN[idx];
+
+    const tidsbodEl = document.getElementById("tidsbodStatus");
+    const duelEl = document.getElementById("duelStatus");
+    const card = document.getElementById("activity-status-card");
+
+    if (!phase || !tidsbodEl || !duelEl) return;
+
+    tidsbodEl.innerHTML = `Tidsbod: <span class="${statusClass(phase.tidsbodOpen)}">${statusText(phase.tidsbodOpen)}</span>`;
+    duelEl.innerHTML = `Dueller: <span class="${statusClass(phase.duelsOpen)}">${statusText(phase.duelsOpen)}</span>`;
+
+    if (currentActivityStatusIndex !== idx){
+      currentActivityStatusIndex = idx;
+      openActivityStatus();
+
+      if (card){
+        card.classList.remove("status-flash");
+        void card.offsetWidth;
+        card.classList.add("status-flash");
+      }
+    }
+  }
+
   function renderTimers(){
     if (!adjustableEndAt || !fixedEndAt || gameIsFinished) return;
 
@@ -844,6 +1039,8 @@
 
     const adjustableEl = document.getElementById("adjustableTimer");
     const fixedEl = document.getElementById("fixedTimer");
+
+    updateActivityStatus(fixedLeft);
 
     if (!finalPhaseActive && fixedLeft <= FINAL_PHASE_MS && fixedLeft > 0){
       activateFinalPhase();
@@ -870,6 +1067,7 @@
 
     gameIsFinished = false;
     finalPhaseActive = false;
+    currentActivityStatusIndex = null;
     document.body.classList.remove("final-phase");
     document.body.classList.remove("phase-banner-closed");
 
@@ -1014,6 +1212,8 @@
 
     const adjustableEl = document.getElementById("adjustableTimer");
     const fixedEl = document.getElementById("fixedTimer");
+
+    updateActivityStatus(0);
 
     if (adjustableEl){
       adjustableEl.textContent = scoreText;
@@ -1207,6 +1407,8 @@
         const missionShell = document.getElementById("mission-board-shell");
         const missionBoard = document.getElementById("mission-board");
         const missionToggleText = document.getElementById("missionToggleText");
+        const activityStatusShell = document.getElementById("activity-status-shell");
+        const activityStatusToggleText = document.getElementById("activityStatusToggleText");
 
         if (missionBoard){
           missionBoard.innerHTML = "";
@@ -1220,6 +1422,17 @@
         if (missionToggleText){
           missionToggleText.textContent = "Skjul missioner";
         }
+
+        if (activityStatusShell){
+          activityStatusShell.style.display = "flex";
+          activityStatusShell.classList.remove("collapsed");
+        }
+
+        if (activityStatusToggleText){
+          activityStatusToggleText.textContent = "Skjul status";
+        }
+
+        currentActivityStatusIndex = null;
 
         updateMissionCount();
 
@@ -1267,6 +1480,7 @@
     const minus30Btn = document.getElementById("minus30Btn");
     const closePhaseBannerBtn = document.getElementById("closePhaseBannerBtn");
     const missionToggleBtn = document.getElementById("missionToggleBtn");
+    const activityStatusToggleBtn = document.getElementById("activityStatusToggleBtn");
 
     if (checkBtn){
       checkBtn.addEventListener("click", checkKode);
@@ -1295,6 +1509,10 @@
 
     if (missionToggleBtn){
       missionToggleBtn.addEventListener("click", toggleMissionBoard);
+    }
+
+    if (activityStatusToggleBtn){
+      activityStatusToggleBtn.addEventListener("click", toggleActivityStatus);
     }
 
     initGate();
