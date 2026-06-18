@@ -491,52 +491,6 @@
     }
   }
 
-  #random-mission-popup{
-    position:fixed;
-    inset:0;
-    z-index:10003;
-    display:none;
-    place-items:center;
-    background:rgba(0,0,0,.55);
-  }
-
-  .random-mission-card{
-    width:min(560px,92vw);
-    background:var(--bg);
-    color:var(--ink);
-    border-radius:22px;
-    padding:26px;
-    box-shadow:0 18px 60px rgba(0,0,0,.45);
-    border:3px solid #c62828;
-    text-align:center;
-    animation:missionPop .35s ease;
-  }
-
-  .random-mission-card h2{
-    margin:0 0 12px;
-    font-size:30px;
-    font-weight:1000;
-    color:#c62828;
-    text-transform:uppercase;
-  }
-
-  .random-mission-card p{
-    font-size:18px;
-    font-weight:700;
-    margin:8px 0;
-  }
-
-  .random-mission-card button{
-    margin-top:18px;
-    border:0;
-    border-radius:12px;
-    padding:12px 18px;
-    background:var(--brand);
-    color:white;
-    font-weight:900;
-    cursor:pointer;
-  }
-
   @media (max-width:700px){
     #code-panel{
       top:12px;
@@ -657,7 +611,7 @@
   <h1>Slutfase aktiveret</h1>
   <p>Alle bonusser tæller dobbelt.</p>
   <p>Forkerte svar giver dobbelt straf.</p>
-  <p>Sidste mission er låst op.</p>
+  <p>Missionerne giver dobbelt tid i slutfasen.</p>
 </div>
 
 <div id="mission-board-shell">
@@ -669,136 +623,159 @@
   <div id="mission-board"></div>
 </div>
 
-<div id="random-mission-popup">
-  <div class="random-mission-card">
-    <h2>Akut mission!</h2>
-    <p id="randomMissionTitle">Mission låst op</p>
-    <p id="randomMissionPeople">Kræver 4 personer.</p>
-    <p id="randomMissionStart">Start nu.</p>
-    <p id="randomMissionReward">Belønning: +7 minutter.</p>
-    <button id="closeRandomMissionBtn" type="button">Forstået</button>
-  </div>
-</div>
 
 <script>
   "use strict";
 
   const MAP_ID = "map_7b78e732d0bc3efcd9d57fcf33eec995";
 
-  const POSTS = [
+  // HER RETTER DU MISSIONER/POSTER
+  // code = koden der låser missionen op
+  // name = navnet på missionen/posten; vises både på kortet og i missionsarket
+  // lat/lon = koordinaterne for markøren på kortet
+  // people = antal personer der skal bruges
+  // solveAt = fast tid på den faste timer, hvor missionen skal løses. Første mission er 56:00 = 4 min inde i løbet.
+  // rewardsMin = minutter til 1., 2. og 3. plads. Øvrige får 0 minutter.
+  const MISSIONS = [
     {
       code: "1234",
-      name: "Post 1",
+      name: "Atletikbanen",
       lat: 55.715006,
       lon: 9.989017,
-      popup: "Post 1: Atletikbanen<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "red",
-        title: "Rød mission låst op",
-        people: 4,
-        startOffsetMin: 8,
-        rewardMin: 7
-      }
+      people: 4,
+      solveAt: "56:00",
+      rewardsMin: { first: 7, second: 5, third: 3 }
     },
     {
       code: "2345",
-      name: "Post 2",
+      name: "Bålpladsen",
       lat: 55.714184,
       lon: 9.987867,
-      popup: "Post 2: Bålpladsen<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "blue",
-        title: "Blå mission låst op",
-        people: 3,
-        startOffsetMin: 10,
-        rewardMin: 5
-      }
+      people: 3,
+      solveAt: "52:00",
+      rewardsMin: { first: 6, second: 4, third: 2 }
     },
     {
       code: "3456",
-      name: "Post 3",
+      name: "Søen",
       lat: 55.714649,
       lon: 9.992448,
-      popup: "Post 3: Søen<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "green",
-        title: "Grøn mission låst op",
-        people: 2,
-        startOffsetMin: 7,
-        rewardMin: 4
-      }
+      people: 2,
+      solveAt: "48:00",
+      rewardsMin: { first: 5, second: 3, third: 1 }
     },
     {
       code: "4567",
-      name: "Post 4",
+      name: "Rododendron",
       lat: 55.713184,
       lon: 9.989702,
-      popup: "Post 4: Rododendron<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "red",
-        title: "Rød mission låst op",
-        people: 4,
-        startOffsetMin: 12,
-        rewardMin: 7
-      }
+      people: 4,
+      solveAt: "44:00",
+      rewardsMin: { first: 7, second: 5, third: 3 }
     },
     {
       code: "5678",
-      name: "Post 5",
+      name: "Beachvolleybanerne",
       lat: 55.713582,
-      lon: 9.99129,
-      popup: "Post 5: Beachvolleybanerne<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "black",
-        title: "Sort risikomission låst op",
-        people: 5,
-        startOffsetMin: 9,
-        rewardMin: 10
-      }
+      lon: 9.991290,
+      people: 5,
+      solveAt: "40:00",
+      rewardsMin: { first: 10, second: 7, third: 4 }
     },
     {
       code: "6789",
-      name: "Post 6",
-      lat: 55.7137,
+      name: "Støvlevasken",
+      lat: 55.713700,
       lon: 9.989384,
-      popup: "Post 6: Støvlevasken<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "blue",
-        title: "Blå mission låst op",
-        people: 3,
-        startOffsetMin: 8,
-        rewardMin: 6
-      }
+      people: 3,
+      solveAt: "36:00",
+      rewardsMin: { first: 6, second: 4, third: 2 }
     },
     {
       code: "7891",
-      name: "Post 7",
+      name: "Crossfit",
       lat: 55.713724,
       lon: 9.987689,
-      popup: "Post 7: Crossfit<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "red",
-        title: "Rød mission låst op",
-        people: 4,
-        startOffsetMin: 6,
-        rewardMin: 8
-      }
+      people: 4,
+      solveAt: "32:00",
+      rewardsMin: { first: 8, second: 5, third: 3 }
     },
     {
       code: "8912",
-      name: "Post 8",
+      name: "Hellebjerg skiltet",
       lat: 55.712535,
       lon: 9.987702,
-      popup: "Post 8: Hellebjerg skiltet<br><i>Indtast næste kode for at fortsætte…</i>",
-      mission: {
-        color: "black",
-        title: "Sidste mission låst op",
-        people: 6,
-        startOffsetMin: 5,
-        rewardMin: 12
-      }
+      people: 6,
+      solveAt: "28:00",
+      rewardsMin: { first: 12, second: 8, third: 5 }
+    },
+    {
+      code: "9012",
+      name: "Mission 9",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 4,
+      solveAt: "24:00",
+      rewardsMin: { first: 7, second: 5, third: 3 }
+    },
+    {
+      code: "0123",
+      name: "Mission 10",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 3,
+      solveAt: "20:00",
+      rewardsMin: { first: 6, second: 4, third: 2 }
+    },
+    {
+      code: "1111",
+      name: "Mission 11",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 5,
+      solveAt: "16:00",
+      rewardsMin: { first: 10, second: 7, third: 4 }
+    },
+    {
+      code: "2222",
+      name: "Mission 12",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 2,
+      solveAt: "12:00",
+      rewardsMin: { first: 5, second: 3, third: 1 }
+    },
+    {
+      code: "3333",
+      name: "Mission 13",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 4,
+      solveAt: "08:00",
+      rewardsMin: { first: 8, second: 5, third: 3 }
+    },
+    {
+      code: "4444",
+      name: "Mission 14",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 6,
+      solveAt: "04:00",
+      rewardsMin: { first: 12, second: 8, third: 5 }
+    },
+    {
+      code: "5555",
+      name: "Mission 15",
+      lat: 55.713987,
+      lon: 9.988917,
+      people: 4,
+      solveAt: "00:00",
+      rewardsMin: { first: 9, second: 6, third: 3 }
     }
   ];
+
+  // Beholder navnet POSTS i resten af koden, så den gamle logik stadig virker.
+  const POSTS = MISSIONS;
 
   const START_CODE = "Start";
 
@@ -815,12 +792,8 @@
   let adjustableEndAt = null;
   let fixedEndAt = null;
   let timerTick = null;
-  let randomMissionTimeout = null;
-
   let gameIsFinished = false;
   let finalPhaseActive = false;
-  let randomMissionHasAppeared = false;
-
   let nextIndex = 0;
   let gameLayer;
 
@@ -855,6 +828,10 @@
 
   function formatReward(rewardMin){
     return finalPhaseActive ? rewardMin * 2 : rewardMin;
+  }
+
+  function formatSolveAt(mission){
+    return mission.solveAt || "--:--";
   }
 
   function renderTimers(){
@@ -893,8 +870,6 @@
 
     gameIsFinished = false;
     finalPhaseActive = false;
-    randomMissionHasAppeared = false;
-
     document.body.classList.remove("final-phase");
     document.body.classList.remove("phase-banner-closed");
 
@@ -909,67 +884,10 @@
       clearInterval(timerTick);
     }
 
-    if (randomMissionTimeout){
-      clearTimeout(randomMissionTimeout);
-    }
-
-    scheduleRandomMissionAroundMiddle();
-
     updateTimerButtonLabels();
     renderTimers();
 
     timerTick = setInterval(renderTimers, 250);
-  }
-
-  function scheduleRandomMissionAroundMiddle(){
-    const minDelay = 25 * 60 * 1000;
-    const maxDelay = 35 * 60 * 1000;
-    const randomDelay = Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
-
-    randomMissionTimeout = setTimeout(() => {
-      if (!gameIsFinished && !randomMissionHasAppeared){
-        showRandomMission();
-      }
-    }, randomDelay);
-  }
-
-  function showRandomMission(){
-    randomMissionHasAppeared = true;
-
-    const popup = document.getElementById("random-mission-popup");
-
-    const mission = {
-      color: "red",
-      title: "Rød mission låst op",
-      people: 4,
-      startOffsetMin: 3,
-      rewardMin: 7
-    };
-
-    const title = document.getElementById("randomMissionTitle");
-    const people = document.getElementById("randomMissionPeople");
-    const start = document.getElementById("randomMissionStart");
-    const reward = document.getElementById("randomMissionReward");
-
-    if (title) title.textContent = mission.title;
-    if (people) people.textContent = `Kræver ${mission.people} personer.`;
-    if (start) start.textContent = `Start kl. ${getClockTimeFromNow(mission.startOffsetMin)}.`;
-    if (reward) reward.textContent = `Belønning: +${formatReward(mission.rewardMin)} minutter.`;
-
-    if (popup){
-      popup.style.display = "grid";
-    }
-
-    addMissionCard(mission);
-    setFeedback("Akut mission låst op! Kig på missionstavlen.", true);
-  }
-
-  function closeRandomMissionPopup(){
-    const popup = document.getElementById("random-mission-popup");
-
-    if (popup){
-      popup.style.display = "none";
-    }
   }
 
   function activateFinalPhase(){
@@ -980,15 +898,6 @@
 
     updateTimerButtonLabels();
 
-    const finalMission = {
-      color: "black",
-      title: "Sidste mission er låst op",
-      people: 6,
-      startOffsetMin: 2,
-      rewardMin: 12
-    };
-
-    addMissionCard(finalMission);
 
     setFeedback("SLUTFASE AKTIVERET! Bonusser tæller dobbelt. Forkerte svar giver dobbelt straf.", true);
   }
@@ -1019,16 +928,21 @@
     shell.style.display = "flex";
 
     const card = document.createElement("div");
-    card.className = `mission-card ${mission.color || "red"}`;
+    card.className = "mission-card";
 
-    const reward = formatReward(mission.rewardMin);
-    const startTime = getClockTimeFromNow(mission.startOffsetMin);
+    const multiplierText = finalPhaseActive ? " — slutfase x2" : "";
+    const first = formatReward(mission.rewardsMin.first);
+    const second = formatReward(mission.rewardsMin.second);
+    const third = formatReward(mission.rewardsMin.third);
 
     card.innerHTML = `
-      <h3>${mission.title}</h3>
+      <h3>${mission.name}</h3>
+      <p><strong>Skal løses ved fast tid: ${formatSolveAt(mission)}</strong></p>
       <p>Kræver ${mission.people} personer.</p>
-      <p>Start kl. ${startTime}.</p>
-      <p>Belønning: +${reward} minutter${finalPhaseActive ? " — slutfase x2" : ""}.</p>
+      <p>1. plads: +${first} minutter${multiplierText}.</p>
+      <p>2. plads: +${second} minutter${multiplierText}.</p>
+      <p>3. plads: +${third} minutter${multiplierText}.</p>
+      <p>Øvrige placeringer: +0 minutter.</p>
     `;
 
     board.prepend(card);
@@ -1095,10 +1009,6 @@
       timerTick = null;
     }
 
-    if (randomMissionTimeout){
-      clearTimeout(randomMissionTimeout);
-      randomMissionTimeout = null;
-    }
 
     const scoreText = mmss(scoreMs);
 
@@ -1149,9 +1059,15 @@
   }
 
   function showPost(p){
-    L.marker([p.lat, p.lon], { icon: makeDivIcon() })
+    const marker = L.marker([p.lat, p.lon], { icon: makeDivIcon() })
       .addTo(gameLayer)
-      .bindPopup(p.popup)
+      .bindPopup(`<b>${p.name}</b><br><strong>Skal løses ved fast tid: ${formatSolveAt(p)}</strong><br><i>Indtast næste kode for at fortsætte…</i>`)
+      .bindTooltip(p.name, {
+        permanent: true,
+        direction: "top",
+        offset: [0, -12],
+        opacity: 0.95
+      })
       .openPopup();
 
     if (SHOW_HALO){
@@ -1228,9 +1144,7 @@
 
     showPost(expected);
 
-    if (expected.mission){
-      addMissionCard(expected.mission);
-    }
+    addMissionCard(expected);
 
     nextIndex = Math.min(nextIndex + 1, POSTS.length);
 
@@ -1287,9 +1201,7 @@
         nextIndex = 0;
         gameIsFinished = false;
         finalPhaseActive = false;
-        randomMissionHasAppeared = false;
-
-        document.body.classList.remove("final-phase");
+            document.body.classList.remove("final-phase");
         document.body.classList.remove("phase-banner-closed");
 
         const missionShell = document.getElementById("mission-board-shell");
@@ -1353,7 +1265,6 @@
 
     const plus30Btn = document.getElementById("plus30Btn");
     const minus30Btn = document.getElementById("minus30Btn");
-    const closeRandomMissionBtn = document.getElementById("closeRandomMissionBtn");
     const closePhaseBannerBtn = document.getElementById("closePhaseBannerBtn");
     const missionToggleBtn = document.getElementById("missionToggleBtn");
 
@@ -1376,10 +1287,6 @@
 
     if (minus30Btn){
       minus30Btn.addEventListener("click", () => adjustAdjustableTimer(-currentAdjustmentMs()));
-    }
-
-    if (closeRandomMissionBtn){
-      closeRandomMissionBtn.addEventListener("click", closeRandomMissionPopup);
     }
 
     if (closePhaseBannerBtn){
@@ -1405,78 +1312,74 @@
         {
             center: [55.713987, 9.988917],
             crs: L.CRS.EPSG3857,
-            ...{
-                "zoom": 17,
-                "zoomControl": true,
-                "preferCanvas": false,
-            }
+            zoom: 17,
+            zoomControl: true,
+            preferCanvas: false
         }
     );
 
     L.control.scale().addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
 
-    var tile_layer_c04335efb148a20b67a2e638655cbf4e = L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    var satelliteLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
-            "minZoom": 0,
-            "maxZoom": 20,
-            "maxNativeZoom": 20,
-            "noWrap": false,
-            "attribution": "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors &copy; <a href=\"https://carto.com/attributions\">CARTO</a>",
-            "subdomains": "abcd",
-            "detectRetina": false,
-            "tms": false,
-            "opacity": 1,
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 20
         }
     );
 
-    tile_layer_c04335efb148a20b67a2e638655cbf4e.addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
+    var labelsLayer = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
+        {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: "abcd",
+            maxZoom: 20
+        }
+    );
+
+    satelliteLayer.addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
+    labelsLayer.addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
 
     L.control.fullscreen(
         {
-            "position": "topleft",
-            "title": "Full Screen",
-            "titleCancel": "Exit Full Screen",
-            "forceSeparateButton": false,
+            position: "topleft",
+            title: "Full Screen",
+            titleCancel: "Exit Full Screen",
+            forceSeparateButton: false
         }
     ).addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
 
-    var tile_layer_0c1008b38f448935c3a7affcb0150acf = L.tileLayer(
+    var miniMapLayer = L.tileLayer(
         "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-            "attribution": "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
-            "detect_retina": false,
-            "max_native_zoom": 19,
-            "max_zoom": 19,
-            "min_zoom": 0,
-            "no_wrap": false,
-            "opacity": 1,
-            "subdomains": "abc",
-            "tms": false
+            attribution: "&copy; OpenStreetMap contributors",
+            maxZoom: 19
         }
     );
 
     var mini_map_8eac6467b99721dbd2a072d5acd486e5 = new L.Control.MiniMap(
-        tile_layer_0c1008b38f448935c3a7affcb0150acf,
+        miniMapLayer,
         {
-            "position": "bottomright",
-            "width": 150,
-            "height": 150,
-            "collapsedWidth": 25,
-            "collapsedHeight": 25,
-            "zoomLevelOffset": -5,
-            "centerFixed": false,
-            "zoomAnimation": false,
-            "toggleDisplay": true,
-            "autoToggleDisplay": false,
-            "minimized": false,
+            position: "bottomright",
+            width: 150,
+            height: 150,
+            collapsedWidth: 25,
+            collapsedHeight: 25,
+            zoomLevelOffset: -5,
+            centerFixed: false,
+            zoomAnimation: false,
+            toggleDisplay: true,
+            autoToggleDisplay: false,
+            minimized: false
         }
     );
 
     map_7b78e732d0bc3efcd9d57fcf33eec995.addControl(mini_map_8eac6467b99721dbd2a072d5acd486e5);
 
     var locate_control_7069e530d41a511f4d043dc38f29ce0b = L.control.locate(
-        {"flyTo": true}
+        {
+            flyTo: true
+        }
     ).addTo(map_7b78e732d0bc3efcd9d57fcf33eec995);
 </script>
 
