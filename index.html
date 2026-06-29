@@ -1388,7 +1388,7 @@
     autoFocusMobile(inp);
 
     function openIfValid(){
-      if ((inp.value || "").trim() === START_CODE){
+      if ((inp.value || "").trim().toLowerCase() === START_CODE.toLowerCase()){
         document.getElementById("start-gate").style.display = "none";
 
         nextIndex = 0;
