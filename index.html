@@ -701,10 +701,7 @@
 <div id="phase-banner">
   <button id="closePhaseBannerBtn" type="button" aria-label="Luk slutfase-besked">×</button>
 
-  <h1>Slutfase aktiveret</h1>
-  <p>Alle bonusser tæller dobbelt.</p>
-  <p>Forkerte svar giver dobbelt straf.</p>
-  <p>Missionerne giver dobbelt tid i slutfasen.</p>
+  <h1>Slutfase - 10 minutter tilbage</h1>
 </div>
 
 
@@ -717,8 +714,8 @@
 
   <div id="activity-status-card">
     <h3>Status</h3>
-    <p id="tidsbodStatus">Tidsbod: Åben</p>
-    <p id="duelStatus">Dueller: Lukket</p>
+    <p id="tidsbodStatus">Tidsbod (Foredragssal): Åben</p>
+    <p id="duelStatus">Dueller (Hallen): Lukket</p>
   </div>
 </div>
 
@@ -768,7 +765,7 @@
       name: "Gravmaskinen",
       lat: 55.713595,
       lon: 9.991279,
-      people: 2,
+      people: 4,
       solveAt: "50:00",
       rewardsMin: { first: 5, second: 3, third: 1 }
     },
@@ -810,10 +807,10 @@
     },
     {
       code: "Tidspres",
-      name: "De bedste lunger",
-      lat: 55.714212,
-      lon: 9.987823,
-      people: 1,
+      name: "Mumsmissionen",
+      lat: 55.714106,
+      lon: 9.989652,
+      people: 4,
       solveAt: "35:00",
       rewardsMin: { first: 12, second: 8, third: 5 }
     },
@@ -864,12 +861,12 @@
     },
     {
       code: "16",
-      name: "Mumsmissionen",
-      lat: 55.714102,
-      lon: 9.989648,
-      people: 2,
+      name: "De bedste lunger",
+      lat: 55.714198,
+      lon: 9.987870,
+      people: 1,
       solveAt: "10:00",
-      rewardsMin: { first: 12, second: 8, third: 5 }
+      rewardsMin: { first: 6, second: 4, third: 2 }
     },
     {
       code: "B",
@@ -939,15 +936,15 @@
   }
 
   function currentAdjustmentMs(){
-    return finalPhaseActive ? ADJUSTMENT_MS * 2 : ADJUSTMENT_MS;
+    return ADJUSTMENT_MS;
   }
 
   function currentWrongPenaltyMs(){
-    return finalPhaseActive ? WRONG_ANSWER_PENALTY_MS * 2 : WRONG_ANSWER_PENALTY_MS;
+    return WRONG_ANSWER_PENALTY_MS;
   }
 
   function formatReward(rewardMin){
-    return finalPhaseActive ? rewardMin * 2 : rewardMin;
+    return rewardMin;
   }
 
   function formatSolveAt(mission){
@@ -1014,8 +1011,8 @@
 
     if (!phase || !tidsbodEl || !duelEl) return;
 
-    tidsbodEl.innerHTML = `Tidsbod: <span class="${statusClass(phase.tidsbodOpen)}">${statusText(phase.tidsbodOpen)}</span>`;
-    duelEl.innerHTML = `Dueller: <span class="${statusClass(phase.duelsOpen)}">${statusText(phase.duelsOpen)}</span>`;
+    tidsbodEl.innerHTML = `Tidsbod (Foredragssal): <span class="${statusClass(phase.tidsbodOpen)}">${statusText(phase.tidsbodOpen)}</span>`;
+    duelEl.innerHTML = `Dueller (Hallen): <span class="${statusClass(phase.duelsOpen)}">${statusText(phase.duelsOpen)}</span>`;
 
     if (currentActivityStatusIndex !== idx){
       currentActivityStatusIndex = idx;
@@ -1097,7 +1094,7 @@
     updateTimerButtonLabels();
 
 
-    setFeedback("SLUTFASE AKTIVERET! Bonusser tæller dobbelt. Forkerte svar giver dobbelt straf.", true);
+    setFeedback("Slutfase - 10 minutter tilbage", true);
   }
 
   function closePhaseBanner(){
@@ -1109,11 +1106,11 @@
     const minus = document.getElementById("minus30Btn");
 
     if (plus){
-      plus.textContent = finalPhaseActive ? "+60 sek" : "+30 sek";
+      plus.textContent = "+30 sek";
     }
 
     if (minus){
-      minus.textContent = finalPhaseActive ? "-60 sek" : "-30 sek";
+      minus.textContent = "-30 sek";
     }
   }
 
@@ -1128,7 +1125,7 @@
     const card = document.createElement("div");
     card.className = "mission-card";
 
-    const multiplierText = finalPhaseActive ? " — slutfase x2" : "";
+    const multiplierText = "";
     const first = formatReward(mission.rewardsMin.first);
     const second = formatReward(mission.rewardsMin.second);
     const third = formatReward(mission.rewardsMin.third);
@@ -1192,11 +1189,7 @@
 
     adjustAdjustableTimer(-penalty);
 
-    if (finalPhaseActive){
-      setFeedback("Forkert kode – dobbelt straf i slutfasen: -60 sek.", false);
-    } else {
-      setFeedback("Forkert kode – prøv igen. Straf: -30 sek.", false);
-    }
+    setFeedback("Forkert kode – prøv igen. Straf: -30 sek.", false);
   }
 
   function finishGameByFixedTimer(scoreMs){
