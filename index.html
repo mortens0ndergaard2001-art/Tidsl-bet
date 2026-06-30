@@ -637,7 +637,7 @@
 <div id="start-gate" aria-modal="true" role="dialog">
   <div class="gate-card">
     <h2>Start adgang</h2>
-    <p>Indtast start-kode for at åbne kortet.</p>
+    <p>Indtast start-kode. Før fælles starttid venter siden automatisk. Skriv Start igen for nød-/teststart.</p>
 
     <input id="startCode"
            type="text"
@@ -808,8 +808,8 @@
     {
       code: "Tidspres",
       name: "Mumsmissionen",
-      lat: 55.714106,
-      lon: 9.989652,
+      lat: 55.714239,
+      lon: 9.990082,
       people: 4,
       solveAt: "35:00",
       rewardsMin: { first: 11, second: 9, third: 7 }
@@ -884,6 +884,11 @@
 
   const START_CODE = "Start";
 
+  // Automatisk fælles starttid.
+  // Skriv tidspunktet som tekst, fx "19:15" eller "01:05".
+  // Vigtigt: Brug anførselstegn. Skriv ikke 01 eller 05 som tal i JavaScript.
+  const AUTO_START_TIME = "10:35";
+
   const SHOW_HALO = false;
   const USE_MAX_BOUNDS = false;
   const MAX_BOUNDS = [[55.7115, 9.9855], [55.7165, 9.9945]];
@@ -922,6 +927,51 @@
     const totalSeconds = Math.ceil(ms / 1000);
     const m = Math.floor(totalSeconds / 60);
     const s = totalSeconds % 60;
+
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function getAutoStartParts(){
+    const value = String(AUTO_START_TIME).trim();
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+
+    if (!match){
+      throw new Error('AUTO_START_TIME skal skrives som fx "19:15" eller "01:05".');
+    }
+
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59){
+      throw new Error('AUTO_START_TIME er ugyldigt. Brug et tidspunkt mellem "00:00" og "23:59".');
+    }
+
+    return { hour, minute };
+  }
+
+  function getScheduledStartAt(){
+    const { hour, minute } = getAutoStartParts();
+    const start = new Date();
+    start.setHours(hour, minute, 0, 0);
+    return start.getTime();
+  }
+
+  function formatStartClock(){
+    const { hour, minute } = getAutoStartParts();
+    return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+  }
+
+  function formatCountdown(ms){
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+
+    if (h > 0){
+      return String(h).padStart(2, "0") + ":" +
+        String(m).padStart(2, "0") + ":" +
+        String(s).padStart(2, "0");
+    }
 
     return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
@@ -1059,7 +1109,7 @@
     }
   }
 
-  function startTimers(){
+  function startTimers(forceStartNow=false){
     const wrapper = document.getElementById("timer-wrapper");
 
     gameIsFinished = false;
@@ -1068,8 +1118,13 @@
     document.body.classList.remove("final-phase");
     document.body.classList.remove("phase-banner-closed");
 
-    adjustableEndAt = Date.now() + START_DURATION_MS;
-    fixedEndAt = Date.now() + START_DURATION_MS;
+    // Normal start: Timerne tager udgangspunkt i den fælles starttid, fx 19:15.
+    // Overrule/teststart: Hvis forceStartNow=true, starter timerne fra nu.
+    const startAt = forceStartNow ? Date.now() : getScheduledStartAt();
+    const endAt = startAt + START_DURATION_MS;
+
+    adjustableEndAt = endAt;
+    fixedEndAt = endAt;
 
     if (wrapper){
       wrapper.style.display = "flex";
@@ -1380,75 +1435,145 @@
     }
   }
 
+  function launchGame(forceStartNow=false){
+    const gate = document.getElementById("start-gate");
+
+    if (gate){
+      gate.style.display = "none";
+    }
+
+    nextIndex = 0;
+    gameIsFinished = false;
+    finalPhaseActive = false;
+    document.body.classList.remove("final-phase");
+    document.body.classList.remove("phase-banner-closed");
+
+    const missionShell = document.getElementById("mission-board-shell");
+    const missionBoard = document.getElementById("mission-board");
+    const missionToggleText = document.getElementById("missionToggleText");
+    const activityStatusShell = document.getElementById("activity-status-shell");
+    const activityStatusToggleText = document.getElementById("activityStatusToggleText");
+
+    if (missionBoard){
+      missionBoard.innerHTML = "";
+    }
+
+    if (missionShell){
+      missionShell.style.display = "none";
+      missionShell.classList.remove("collapsed");
+    }
+
+    if (missionToggleText){
+      missionToggleText.textContent = "Skjul missioner";
+    }
+
+    if (activityStatusShell){
+      activityStatusShell.style.display = "flex";
+      activityStatusShell.classList.remove("collapsed");
+    }
+
+    if (activityStatusToggleText){
+      activityStatusToggleText.textContent = "Skjul status";
+    }
+
+    currentActivityStatusIndex = null;
+
+    updateMissionCount();
+
+    const kodeInput = document.getElementById("kode");
+    const checkButton = document.getElementById("checkBtn");
+    const plus = document.getElementById("plus30Btn");
+    const minus = document.getElementById("minus30Btn");
+
+    if (kodeInput) kodeInput.disabled = false;
+    if (checkButton) checkButton.disabled = false;
+    if (plus) plus.disabled = false;
+    if (minus) minus.disabled = false;
+
+    if (gameLayer){
+      gameLayer.clearLayers();
+    }
+
+    updateProgress();
+
+    startTimers(forceStartNow);
+
+    autoFocusMobile(document.getElementById("kode"));
+  }
+
   function initGate(){
     const btn = document.getElementById("startBtn");
     const inp = document.getElementById("startCode");
     const msg = document.getElementById("startMsg");
 
+    let waitingTick = null;
+    let isWaitingForScheduledStart = false;
+
     autoFocusMobile(inp);
+
+    function forceStartNow(){
+      if (waitingTick){
+        clearInterval(waitingTick);
+        waitingTick = null;
+      }
+
+      launchGame(true);
+    }
+
+    function startOrWaitUntilScheduledTime(){
+      const scheduledStartAt = getScheduledStartAt();
+
+      if (Date.now() >= scheduledStartAt){
+        launchGame(false);
+        return;
+      }
+
+      isWaitingForScheduledStart = true;
+
+      if (btn) btn.textContent = "Start nu / overrule";
+      if (inp){
+        inp.disabled = false;
+        inp.value = "";
+        inp.placeholder = "Skriv Start igen for at starte nu";
+      }
+
+      function updateWaitingMessage(){
+        const left = scheduledStartAt - Date.now();
+
+        if (left <= 0){
+          if (waitingTick){
+            clearInterval(waitingTick);
+            waitingTick = null;
+          }
+
+          launchGame(false);
+          return;
+        }
+
+        if (msg){
+          msg.style.color = "var(--ok)";
+          msg.textContent = `Korrekt kode. Løbet starter automatisk kl. ${formatStartClock()} – om ${formatCountdown(left)}. Skriv Start igen for at starte nu/teste.`;
+        }
+      }
+
+      updateWaitingMessage();
+
+      if (!waitingTick){
+        waitingTick = setInterval(updateWaitingMessage, 250);
+      }
+
+      autoFocusMobile(inp);
+    }
 
     function openIfValid(){
       if ((inp.value || "").trim().toLowerCase() === START_CODE.toLowerCase()){
-        document.getElementById("start-gate").style.display = "none";
-
-        nextIndex = 0;
-        gameIsFinished = false;
-        finalPhaseActive = false;
-            document.body.classList.remove("final-phase");
-        document.body.classList.remove("phase-banner-closed");
-
-        const missionShell = document.getElementById("mission-board-shell");
-        const missionBoard = document.getElementById("mission-board");
-        const missionToggleText = document.getElementById("missionToggleText");
-        const activityStatusShell = document.getElementById("activity-status-shell");
-        const activityStatusToggleText = document.getElementById("activityStatusToggleText");
-
-        if (missionBoard){
-          missionBoard.innerHTML = "";
+        if (isWaitingForScheduledStart){
+          forceStartNow();
+        } else {
+          startOrWaitUntilScheduledTime();
         }
-
-        if (missionShell){
-          missionShell.style.display = "none";
-          missionShell.classList.remove("collapsed");
-        }
-
-        if (missionToggleText){
-          missionToggleText.textContent = "Skjul missioner";
-        }
-
-        if (activityStatusShell){
-          activityStatusShell.style.display = "flex";
-          activityStatusShell.classList.remove("collapsed");
-        }
-
-        if (activityStatusToggleText){
-          activityStatusToggleText.textContent = "Skjul status";
-        }
-
-        currentActivityStatusIndex = null;
-
-        updateMissionCount();
-
-        const kodeInput = document.getElementById("kode");
-        const checkButton = document.getElementById("checkBtn");
-        const plus = document.getElementById("plus30Btn");
-        const minus = document.getElementById("minus30Btn");
-
-        if (kodeInput) kodeInput.disabled = false;
-        if (checkButton) checkButton.disabled = false;
-        if (plus) plus.disabled = false;
-        if (minus) minus.disabled = false;
-
-        if (gameLayer){
-          gameLayer.clearLayers();
-        }
-
-        updateProgress();
-
-        startTimers();
-
-        autoFocusMobile(document.getElementById("kode"));
       } else {
+        msg.style.color = "var(--err)";
         msg.textContent = "Forkert startkode.";
         autoFocusMobile(inp);
       }
